@@ -12,6 +12,7 @@ namespace mystd {
         size_t _capacity;
         char *_data;
         typedef T *iterator;
+        typedef const T *const_iterator;
     public:
         vector();
 
@@ -37,11 +38,11 @@ namespace mystd {
 
         iterator begin();
 
-        const iterator cbegin();
+        const_iterator cbegin();
 
         iterator end();
 
-        const iterator cend();
+        const_iterator cend();
 
         T &front();
 
@@ -95,8 +96,27 @@ namespace mystd {
 
     template<class T>
     T &vector<T>::operator[](size_t index) {
-        T* value = new(_data + sizeof(T) * index) T(_data[sizeof(T) * index]);
-        return *value;
+        return *(reinterpret_cast<T*>(_data + sizeof(T) * index));
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::begin() {
+        return reinterpret_cast<T*>(_data);
+    }
+
+    template<class T>
+    typename vector<T>::const_iterator vector<T>::cbegin() {
+        return begin();
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::end() {
+        return reinterpret_cast<T*>(_data + sizeof(T) * _size);
+    }
+
+    template<class T>
+    typename vector<T>::const_iterator vector<T>::cend() {
+        return end();
     }
 
 
