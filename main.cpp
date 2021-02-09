@@ -3,10 +3,15 @@
 #include "sources/vector/vector.h"
 int main() {
 
-    std::vector<int> vector {1, 2, 3, 4};
-    mystd::vector<int> myvector {1, 2, 3, 4};
+    const std::vector<int> vector {1, 2, 3, 4};
+    mystd::vector<int> avector {1, 2, 3, 4};
+    std::vector<int> v = vector;
+//    v[0] = 10;
+    mystd::vector<int> myvector(avector);
+//    myvector = avector;
 
     auto begin = myvector.begin();
+    auto vbegin = vector.cbegin();
     begin++;
     auto end = myvector.end();
 
@@ -14,6 +19,6 @@ int main() {
         std::cout << v << std::endl;
     }
 
-    std::cout << vector[0] << " " << myvector[0] << std::endl;
+    std::cout << vector.front() << " " << myvector.front() << std::endl;
     return 0;
 }
