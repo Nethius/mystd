@@ -219,6 +219,19 @@ namespace mystd {
         swap(left._capacity, right._capacity);
         swap(left._data, right._data);
     }
+
+    template<class T>
+    void vector<T>::push_back(const T &value) {
+//        if (_size >= _capacity)
+//        {
+//            _capacity++;
+//        }
+        auto t = end() - 1;
+        auto s = begin();
+        new(end()) T(value);
+        _size++;
+        t = end() - 1;
+    }
 }
 
 #endif //MYSTD_VECTOR_H
