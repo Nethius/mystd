@@ -15,6 +15,9 @@ namespace mystd {
         typedef const T *const_iterator;
         typedef T &reference;
         typedef const T &const_reference;
+
+        void reallocate();
+
     public:
         vector();
 
@@ -26,7 +29,10 @@ namespace mystd {
 
         vector(vector<T> &&vector) noexcept;
 
-        vector(std::initializer_list<T>);
+        vector(std::initializer_list<T> list);
+
+        template<class input_iterator, typename = typename std::enable_if_t<std::_Is_iterator<input_iterator>::value>>
+        vector(input_iterator first, input_iterator last);
 
         ~vector();
 
@@ -41,6 +47,18 @@ namespace mystd {
         vector<T> &operator=(vector<T> &&) noexcept;
 
         bool operator==(const vector<T> &right);
+
+        void assign(size_t count, const_reference value);
+
+        template<class input_iterator, typename = typename std::enable_if_t<std::_Is_iterator<input_iterator>::value>>
+        void assign(input_iterator first, input_iterator last);
+
+        iterator insert(const_iterator pos, const_reference value);
+        iterator insert(const_iterator pos, T&& value);
+        iterator insert(const_iterator pos, size_t count, const_reference value);
+        template<class input_iterator, typename = typename std::enable_if_t<std::_Is_iterator<input_iterator>::value>>
+        iterator insert(const_iterator pos, input_iterator first, input_iterator last);
+        iterator insert(const_iterator post, std::initializer_list<T> list);
 
         size_t size() const;
 
@@ -57,11 +75,16 @@ namespace mystd {
         const_iterator cend();
 
         reference front();
+
         const_reference front() const;
+
         reference back();
+
         const_reference back() const;
 
         void push_back(const T &value);
+
+        void push_back(T &&value);
 
         void pop_back();
 
@@ -80,7 +103,7 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(size_t size) : _size(size), _capacity(_size * 2), _data(new char[sizeof(T) * _capacity]) {
+    vector<T>::vector(size_t size) : _size(size), _capacity(_size), _data(new char[sizeof(T) * size]) {
     }
 
     template<class T>
@@ -101,9 +124,16 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(std::initializer_list<T> l) : vector(l.size()) {
+    vector<T>::vector(std::initializer_list<T> list) : vector(list.size()) {
         for (size_t i = 0; i < _size; i++)
-            new(_data + sizeof(T) * i) T(*(l.begin() + i));
+            new(_data + sizeof(T) * i) T(*(list.begin() + i));
+    }
+
+    template<class T>
+    template<class input_iterator, typename>
+    vector<T>::vector(input_iterator first, input_iterator last) : vector(last - first) {
+        for (size_t i = 0; i < _size; i++)
+            new(_data + sizeof(T) * i) T(*(first + i));
     }
 
     template<class T>
@@ -222,16 +252,49 @@ namespace mystd {
 
     template<class T>
     void vector<T>::push_back(const T &value) {
-//        if (_size >= _capacity)
-//        {
-//            _capacity++;
-//        }
-        auto t = end() - 1;
-        auto s = begin();
+        if (_size >= _capacity) {
+            reallocate();
+        }
         new(end()) T(value);
         _size++;
-        t = end() - 1;
     }
+
+    template<class T>
+    void vector<T>::push_back(T &&value) {
+        if (_size >= _capacity) {
+            reallocate();
+        }
+        *end() = std::move(value);
+        _size++;
+    }
+
+    template<class T>
+    void vector<T>::reallocate() {
+        _capacity = _size * 1.5;
+
+        char *new_data = new char[sizeof(T) * _capacity];
+        memcpy(new_data, _data, sizeof(T) * _size);
+        delete[] _data;
+        _data = new_data;
+
+    }
+
+    template<class T>
+    void vector<T>::assign(size_t count, const_reference value) {
+
+    }
+
+    template<class T>
+    template<class input_iterator, typename>
+    void vector<T>::assign(input_iterator first, input_iterator last) {
+
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, const_reference value) {
+        return nullptr;
+    }
+
 }
 
 #endif //MYSTD_VECTOR_H
