@@ -17,6 +17,7 @@ namespace mystd {
         typedef const T &const_reference;
 
         void reallocate();
+        void move_storage(iterator dest, iterator from, size_t count);
 
     public:
         vector();
@@ -60,6 +61,9 @@ namespace mystd {
         iterator insert(const_iterator pos, input_iterator first, input_iterator last);
         iterator insert(const_iterator post, std::initializer_list<T> list);
 
+        template <typename ... Args>
+        iterator emplace(const_iterator pos, Args&& ... args);
+
         size_t size() const;
 
         size_t capacity() const;
@@ -82,7 +86,7 @@ namespace mystd {
 
         const_reference back() const;
 
-        void push_back(const T &value);
+        void push_back(const_reference);
 
         void push_back(T &&value);
 
@@ -143,12 +147,12 @@ namespace mystd {
 
     template<class T>
     T &vector<T>::operator[](size_t index) {
-        return *(reinterpret_cast<T *>(_data + sizeof(T) * index));
+        return *(reinterpret_cast<iterator>(_data + sizeof(T) * index));
     }
 
     template<class T>
     const T &vector<T>::operator[](size_t index) const {
-        return *(reinterpret_cast<T *>(_data + sizeof(T) * index));
+        return *(reinterpret_cast<iterator>(_data + sizeof(T) * index));
     }
 
     template<class T>
@@ -181,15 +185,15 @@ namespace mystd {
         if (_size != right._size)
             return false;
         for (size_t i = 0; i < _size; i++)
-            if (*(reinterpret_cast<T *>(_data + sizeof(T) * i)) !=
-                *(reinterpret_cast<T *>(right._data + sizeof(T) * i)))
+            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) !=
+                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
                 return false;
         return true;
     }
 
     template<class T>
     typename vector<T>::iterator vector<T>::begin() {
-        return reinterpret_cast<T *>(_data);
+        return reinterpret_cast<iterator>(_data);
     }
 
     template<class T>
@@ -199,7 +203,7 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::end() {
-        return reinterpret_cast<T *>(_data + sizeof(T) * _size);
+        return reinterpret_cast<iterator>(_data + sizeof(T) * _size);
     }
 
     template<class T>
@@ -251,7 +255,7 @@ namespace mystd {
     }
 
     template<class T>
-    void vector<T>::push_back(const T &value) {
+    void vector<T>::push_back(const_reference) {
         if (_size >= _capacity) {
             reallocate();
         }
@@ -280,6 +284,26 @@ namespace mystd {
     }
 
     template<class T>
+    void vector<T>::move_storage(iterator dest, iterator from, size_t count) {
+        if (dest < from)
+        {
+            iterator _dest = dest;
+            iterator _from = from;
+            for (size_t i = 0; i < count; i++)
+                *_dest++ = std::move(*_from++);
+        }
+        else if (dest > from)
+        {
+            iterator _dest = dest + count - 1;
+            iterator _from = from + count - 1;
+            for (size_t i = count; i > 0; i--)
+                *_dest-- = std::move(*_from--);
+        }
+        else
+            return;
+    }
+
+    template<class T>
     void vector<T>::assign(size_t count, const_reference value) {
 
     }
@@ -292,8 +316,26 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, const_reference value) {
-        return nullptr;
+        return emplace(pos, value);
     }
+
+    template<class T>
+    template<typename... Args>
+    typename vector<T>::iterator vector<T>::emplace(vector::const_iterator pos, Args &&... args) {
+        size_t index = pos - reinterpret_cast<iterator>(_data);
+
+        if (_size >= _capacity) {
+            reallocate();
+        }
+
+        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        move_storage(it + 1, it, _size - index);
+
+        *it = T(std::forward<Args>(args) ...);
+        _size++;
+        return end();
+    }
+
 
 }
 

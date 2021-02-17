@@ -13,9 +13,18 @@ int main() {
 //    myvector.push_back(v1);
     mystd::vector<int> myvector(vector.cbegin(), vector.cend());
     mystd::vector<int> s(myvector.begin(), myvector.end());
-    
-for (auto v : s){
-        std::cout << v << std::endl;
+    int t = 11;
+    vector.emplace(vector.begin(), 10);
+    auto it = s.begin() + 1;
+    s.emplace(it, 10);
+    for (auto v : s){
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+    it = s.begin() + 1;
+    s.insert(it, t);
+    for (auto v : s){
+        std::cout << v << " ";
     }
 
     for (size_t i = 0; i < myvector.size(); i++){
