@@ -16,7 +16,8 @@ namespace mystd {
         typedef T &reference;
         typedef const T &const_reference;
 
-        void reallocate();
+        void reallocate(size_t size);
+
         void move_storage(iterator dest, iterator from, size_t count);
 
     public:
@@ -41,13 +42,11 @@ namespace mystd {
 
         const_reference operator[](size_t index) const;
 
-        vector<T> &operator=(const vector<T> &);
+        vector<T> &operator=(const vector<T> &vector);
 
-        vector<T> &operator=(vector<T>);
+        vector<T> &operator=(vector <T> &&vector) noexcept;
 
-        vector<T> &operator=(vector<T> &&) noexcept;
-
-        bool operator==(const vector<T> &right);
+        bool operator==(const vector <T> &right);
 
         void assign(size_t count, const_reference value);
 
@@ -55,14 +54,18 @@ namespace mystd {
         void assign(input_iterator first, input_iterator last);
 
         iterator insert(const_iterator pos, const_reference value);
-        iterator insert(const_iterator pos, T&& value);
+
+        iterator insert(const_iterator pos, T &&value);
+
         iterator insert(const_iterator pos, size_t count, const_reference value);
+
         template<class input_iterator, typename = typename std::enable_if_t<std::_Is_iterator<input_iterator>::value>>
         iterator insert(const_iterator pos, input_iterator first, input_iterator last);
-        iterator insert(const_iterator post, std::initializer_list<T> list);
 
-        template <typename ... Args>
-        iterator emplace(const_iterator pos, Args&& ... args);
+        iterator insert(const_iterator pos, std::initializer_list<T> list);
+
+        template<typename ... Args>
+        iterator emplace(const_iterator pos, Args &&... args);
 
         size_t size() const;
 
@@ -72,11 +75,15 @@ namespace mystd {
 
         iterator begin();
 
-        const_iterator cbegin();
+        const_iterator begin() const;
+
+        const_iterator cbegin() const;
 
         iterator end();
 
-        const_iterator cend();
+        const_iterator end() const;
+
+        const_iterator cend() const;
 
         reference front();
 
@@ -98,7 +105,8 @@ namespace mystd {
 
         void clear();
 
-        friend void swap(vector<T> &left, vector<T> &right);
+        template<class R>
+        friend void swap(vector<R> &left, vector<R> &right);
 
     };
 
@@ -111,7 +119,7 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(size_t size, const T &initial) : vector(vector._size) {
+    vector<T>::vector(size_t size, const T &initial) : vector(size) {
         for (size_t i = 0; i < _size; i++)
             new(_data + sizeof(T) * i) T(initial);
     }
@@ -156,24 +164,15 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T> &vector<T>::operator=(const vector<T> &vector) {
+    vector<T> &vector<T>::operator=(const vector <T> &vector) {
         if (*this != vector) {
-            auto temporaryVector(vector);
-            swap(*this, temporaryVector);
+            swap(*this, vector < T > (vector));
         }
         return *this;
     }
 
     template<class T>
     vector<T> &vector<T>::operator=(vector<T> &&vector) noexcept {
-        if (*this != vector) {
-            swap(*this, vector);
-        }
-        return *this;
-    }
-
-    template<class T>
-    vector<T> &vector<T>::operator=(vector<T> vector) {
         if (*this != vector) {
             swap(*this, vector);
         }
@@ -197,7 +196,12 @@ namespace mystd {
     }
 
     template<class T>
-    typename vector<T>::const_iterator vector<T>::cbegin() {
+    typename vector<T>::const_iterator vector<T>::begin() const {
+        return reinterpret_cast<iterator>(_data);
+    }
+
+    template<class T>
+    typename vector<T>::const_iterator vector<T>::cbegin() const {
         return begin();
     }
 
@@ -207,7 +211,12 @@ namespace mystd {
     }
 
     template<class T>
-    typename vector<T>::const_iterator vector<T>::cend() {
+    typename vector<T>::const_iterator vector<T>::end() const {
+        return reinterpret_cast<iterator>(_data + sizeof(T) * _size);
+    }
+
+    template<class T>
+    typename vector<T>::const_iterator vector<T>::cend() const {
         return end();
     }
 
@@ -246,8 +255,8 @@ namespace mystd {
         return *cend();
     }
 
-    template<class T>
-    void swap(vector<T> &left, vector<T> &right) {
+    template<class R>
+    void swap(vector<R> &left, vector<R> &right) {
         using std::swap; //enable ADL? https://stackoverflow.com/questions/5695548/public-friend-swap-member-function
         swap(left._size, right._size);
         swap(left._capacity, right._capacity);
@@ -257,7 +266,7 @@ namespace mystd {
     template<class T>
     void vector<T>::push_back(const_reference) {
         if (_size >= _capacity) {
-            reallocate();
+            reallocate(_size);
         }
         new(end()) T(value);
         _size++;
@@ -266,18 +275,18 @@ namespace mystd {
     template<class T>
     void vector<T>::push_back(T &&value) {
         if (_size >= _capacity) {
-            reallocate();
+            reallocate(_size);
         }
         *end() = std::move(value);
         _size++;
     }
 
     template<class T>
-    void vector<T>::reallocate() {
-        _capacity = _size * 1.5;
+    void vector<T>::reallocate(size_t size) {
+        _capacity = size * 1.5;
 
         char *new_data = new char[sizeof(T) * _capacity];
-        memcpy(new_data, _data, sizeof(T) * _size);
+        memcpy(new_data, _data, sizeof(T) * size);
         delete[] _data;
         _data = new_data;
 
@@ -285,38 +294,29 @@ namespace mystd {
 
     template<class T>
     void vector<T>::move_storage(iterator dest, iterator from, size_t count) {
-        if (dest < from)
-        {
+        if (dest < from) {
             iterator _dest = dest;
             iterator _from = from;
             for (size_t i = 0; i < count; i++)
                 *_dest++ = std::move(*_from++);
-        }
-        else if (dest > from)
-        {
+        } else if (dest > from) {
             iterator _dest = dest + count - 1;
             iterator _from = from + count - 1;
             for (size_t i = count; i > 0; i--)
                 *_dest-- = std::move(*_from--);
-        }
-        else
+        } else
             return;
     }
 
     template<class T>
     void vector<T>::assign(size_t count, const_reference value) {
-
+        swap(*this, vector<T>(count, value));
     }
 
     template<class T>
     template<class input_iterator, typename>
     void vector<T>::assign(input_iterator first, input_iterator last) {
-
-    }
-
-    template<class T>
-    typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, const_reference value) {
-        return emplace(pos, value);
+        swap(*this, vector<T>(first, last));
     }
 
     template<class T>
@@ -325,7 +325,7 @@ namespace mystd {
         size_t index = pos - reinterpret_cast<iterator>(_data);
 
         if (_size >= _capacity) {
-            reallocate();
+            reallocate(_size);
         }
 
         iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
@@ -333,7 +333,66 @@ namespace mystd {
 
         *it = T(std::forward<Args>(args) ...);
         _size++;
-        return end();
+        return it;
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, const_reference value) {
+        return emplace(pos, value);
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, T &&value) {
+        return emplace(pos, std::move(value));
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, size_t count, const_reference value) {
+        if (!count)
+            return pos;
+        size_t index = pos - reinterpret_cast<iterator>(_data);
+
+        if (_size + n >= _capacity) {
+            reallocate(_size + n);
+        }
+
+        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        move_storage(it + n, it, _size - index);
+
+        for (size_t i = 0; i < n; i++)
+            *(it + i) = value;
+        _size += n;
+        return it;
+    }
+
+    template<class T>
+    template<class input_iterator, typename>
+    typename vector<T>::iterator
+    vector<T>::insert(vector::const_iterator pos, input_iterator first, input_iterator last) {
+        size_n n = 0;
+        for (input_iterator curr = first; curr != last; ++curr)
+            ++n;
+
+        if (!n)
+            return pos;
+        size_t index = pos - reinterpret_cast<iterator>(_data);
+
+        if (_size + n >= _capacity) {
+            reallocate(_size + n);
+        }
+
+        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        move_storage(it + n, it, _size - index);
+
+        for (size_t i = 0; i < n; i++)
+            *(it + i) = *(first + i);
+        _size += n;
+        return it;
+    }
+
+    template<class T>
+    typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, std::initializer_list<T> list) {
+        return insert(pos, list.begin(), list.end());
     }
 
 
