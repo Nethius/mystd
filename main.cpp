@@ -13,10 +13,15 @@ int main() {
     }
     std::cout << std::endl;
     std::vector<int> a(std::vector<int>(2, 5));
+    for (auto v : a) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
 
     mystd::vector<int> s(mystd::vector<int>{1, 2, 3, 4, 5});
 //    s = myvector;
-
+    s.shrink_to_fit();
+    s.pop_back();
     for (auto v : s) {
         std::cout << v << " ";
     }
