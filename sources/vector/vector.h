@@ -180,9 +180,12 @@ namespace mystd {
 
     template<class T>
     template<class input_iterator, typename>
-    vector<T>::vector(input_iterator first, input_iterator last) : vector(last - first) {
-        for (size_t i = 0; i < _size; i++)
-            new(_data + sizeof(T) * i) T(*(first + i));
+    vector<T>::vector(input_iterator first, input_iterator last) : vector(std::distance(first, last)) {
+        auto it = first;
+        for (size_t i = 0; i < _size; i++) {
+            new(_data + sizeof(T) * i) T(*(it));
+            it = std::next(it);
+        }
     }
 
     template<class T>
@@ -414,9 +417,7 @@ namespace mystd {
     template<class input_iterator, typename>
     typename vector<T>::iterator
     vector<T>::insert(vector::const_iterator pos, input_iterator first, input_iterator last) {
-        size_n n = 0;
-        for (input_iterator curr = first; curr != last; ++curr)
-            ++n;
+        size_n n = std::distance(first, last);
 
         if (!n)
             return pos;
@@ -426,13 +427,17 @@ namespace mystd {
             reallocate((_size + n) * expansion_ratio);
         }
 
-        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
-        move_backward(it + n, it, _size - index);
+        iterator dest = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        move_backward(dest + n, dest, _size - index);
 
-        for (size_t i = 0; i < n; i++)
-            *(it + i) = *(first + i);
+        auto from = first;
+
+        for (size_t i = 0; i < n; i++) {
+            *(dest + i) = *(from);
+            from = std::next(from);
+        }
         _size += n;
-        return it;
+        return dest;
     }
 
     template<class T>
