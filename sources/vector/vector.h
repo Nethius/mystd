@@ -54,8 +54,6 @@ namespace mystd {
 
         vector<T> &operator=(vector <T> &&vector) noexcept;
 
-        bool operator==(const vector <T> &right);
-
         void assign(size_t count, const_reference value);
 
         template<class input_iterator, typename = typename std::enable_if_t<std::_Is_iterator<input_iterator>::value>>
@@ -145,6 +143,23 @@ namespace mystd {
         template<class R>
         friend void swap(vector<R> &left, vector<R> &right);
 
+        template<class R>
+        friend bool operator==(const vector <R> &left, const vector <R> &right);
+
+        template<class R>
+        friend bool operator!=(const vector <R> &left, const vector <R> &right);
+
+        template<class R>
+        friend bool operator<(const vector <R> &left, const vector <R> &right);
+
+        template<class R>
+        friend bool operator<=(const vector <R> &left, const vector <R> &right);
+
+        template<class R>
+        friend bool operator>(const vector <R> &left, const vector <R> &right);
+
+        template<class R>
+        friend bool operator>=(const vector <R> &left, const vector <R> &right);
     };
 
     template<class T>
@@ -217,17 +232,6 @@ namespace mystd {
             swap(*this, vector);
         }
         return *this;
-    }
-
-    template<class T>
-    bool vector<T>::operator==(const vector <T> &right) {
-        if (_size != right._size)
-            return false;
-        for (size_t i = 0; i < _size; i++)
-            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) !=
-                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
-                return false;
-        return true;
     }
 
     template<class T>
@@ -531,6 +535,54 @@ namespace mystd {
                 (*it + i).~T();
         }
         _size = count;
+    }
+
+    template<class R>
+    bool operator==(const vector<R> &left, const vector<R> &right) {
+        if (_size != right._size)
+            return false;
+        for (size_t i = 0; i < _size; i++)
+            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) !=
+                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
+                return false;
+        return true;
+    }
+
+    template<class R>
+    bool operator!=(const vector<R> &left, const vector<R> &right) {
+        return !(left = right);
+    }
+
+    template<class R>
+    bool operator<(const vector<R> &left, const vector<R> &right) {
+        size_t size = left.size() < right.size() ? left.size() : right.size();
+        for (size_t i = 0; i < size; i++) {
+            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) <
+                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
+                return true;
+        }
+        return false;
+    }
+
+    template<class R>
+    bool operator<=(const vector<R> &left, const vector<R> &right) {
+        return !(left > right);
+    }
+
+    template<class R>
+    bool operator>(const vector<R> &left, const vector<R> &right) {
+        size_t size = left.size() < right.size() ? left.size() : right.size();
+        for (size_t i = 0; i < size; i++) {
+            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) >
+                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
+                return true;
+        }
+        return false;
+    }
+
+    template<class R>
+    bool operator>=(const vector<R> &left, const vector<R> &right) {
+        return !(left < right);
     }
 
 
