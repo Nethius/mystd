@@ -4,4 +4,7 @@ project(mystd)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(sources)
-add_executable(mystd main.cpp sources/vector/vector.h)
+
+add_subdirectory(sources)
+add_subdirectory(tests)
+add_subdirectory(lib/gtest)
