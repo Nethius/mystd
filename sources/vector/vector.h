@@ -121,7 +121,7 @@ namespace mystd {
 
         const_iterator data() const;
 
-        void push_back(const_reference);
+        void push_back(const_reference value);
 
         void push_back(T &&value);
 
@@ -140,26 +140,26 @@ namespace mystd {
 
         void clear();
 
-        template<class R>
-        friend void swap(vector<R> &left, vector<R> &right);
+        template<class T>
+        friend void swap(vector<T> &left, vector<T> &right);
 
-        template<class R>
-        friend bool operator==(const vector <R> &left, const vector <R> &right);
+        template<class T>
+        friend bool operator==(const vector <T> &left, const vector <T> &right);
 
-        template<class R>
-        friend bool operator!=(const vector <R> &left, const vector <R> &right);
+        template<class T>
+        friend bool operator!=(const vector <T> &left, const vector <T> &right);
 
-        template<class R>
-        friend bool operator<(const vector <R> &left, const vector <R> &right);
+        template<class T>
+        friend bool operator<(const vector <T> &left, const vector <T> &right);
 
-        template<class R>
-        friend bool operator<=(const vector <R> &left, const vector <R> &right);
+        template<class T>
+        friend bool operator<=(const vector <T> &left, const vector <T> &right);
 
-        template<class R>
-        friend bool operator>(const vector <R> &left, const vector <R> &right);
+        template<class T>
+        friend bool operator>(const vector <T> &left, const vector <T> &right);
 
-        template<class R>
-        friend bool operator>=(const vector <R> &left, const vector <R> &right);
+        template<class T>
+        friend bool operator>=(const vector <T> &left, const vector <T> &right);
     };
 
     template<class T>
@@ -221,7 +221,7 @@ namespace mystd {
     template<class T>
     vector<T> &vector<T>::operator=(const vector <T> &vector) {
         if (*this != vector) {
-            swap(*this, vector < T > (vector));
+            swap(*this, mystd::vector<T>(vector));
         }
         return *this;
     }
@@ -291,16 +291,16 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::reference vector<T>::back() {
-        return *end();
+        return *(end() - 1);
     }
 
     template<class T>
     typename vector<T>::const_reference vector<T>::back() const {
-        return *cend();
+        return *(cend() - 1);
     }
 
-    template<class R>
-    void swap(vector<R> &left, vector<R> &right) {
+    template<class T>
+    void swap(vector<T> &left, vector<T> &right) {
         using std::swap; //enable ADL? https://stackoverflow.com/questions/5695548/public-friend-swap-member-function
         swap(left._size, right._size);
         swap(left._capacity, right._capacity);
@@ -308,7 +308,7 @@ namespace mystd {
     }
 
     template<class T>
-    void vector<T>::push_back(const_reference) {
+    void vector<T>::push_back(const_reference value) {
         if (_size >= _capacity) {
             reallocate(_size * expansion_ratio);
         }
@@ -332,12 +332,11 @@ namespace mystd {
         char *new_data = new char[sizeof(T) * _capacity];
         //memcpy(new_data, _data, sizeof(T) * _size);
         iterator new_begin = reinterpret_cast<iterator>(new_data);
-        for (auto it = begin(); begin() != end(); it++)
-            *new_begin++ = std::move(*it++);
+        for (auto it = begin(); it != end(); it++)
+            *new_begin++ = std::move(*it);
 
         delete[] _data;
         _data = new_data;
-
     }
 
     template<class T>
@@ -502,7 +501,8 @@ namespace mystd {
 
     template<class T>
     void vector<T>::reserve(size_t size) {
-        reallocate(size);
+        if (size > _capacity)
+            reallocate(size);
     }
 
     template<class T>
@@ -537,51 +537,51 @@ namespace mystd {
         _size = count;
     }
 
-    template<class R>
-    bool operator==(const vector<R> &left, const vector<R> &right) {
-        if (_size != right._size)
+    template<class T>
+    bool operator==(const vector<T> &left, const vector<T> &right) {
+        if (left._size != right._size)
             return false;
-        for (size_t i = 0; i < _size; i++)
-            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) !=
-                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
+        for (size_t i = 0; i < left._size; i++)
+            if (*(reinterpret_cast<T *>(left._data + sizeof(T) * i)) !=
+                *(reinterpret_cast<T *>(right._data + sizeof(T) * i)))
                 return false;
         return true;
     }
 
-    template<class R>
-    bool operator!=(const vector<R> &left, const vector<R> &right) {
-        return !(left = right);
+    template<class T>
+    bool operator!=(const vector<T> &left, const vector<T> &right) {
+        return !(left == right);
     }
 
-    template<class R>
-    bool operator<(const vector<R> &left, const vector<R> &right) {
+    template<class T>
+    bool operator<(const vector<T> &left, const vector<T> &right) {
         size_t size = left.size() < right.size() ? left.size() : right.size();
         for (size_t i = 0; i < size; i++) {
-            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) <
-                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
+            if (*(reinterpret_cast<T *>(left._data + sizeof(T) * i)) <
+                *(reinterpret_cast<T *>(right._data + sizeof(T) * i)))
                 return true;
         }
         return false;
     }
 
-    template<class R>
-    bool operator<=(const vector<R> &left, const vector<R> &right) {
+    template<class T>
+    bool operator<=(const vector<T> &left, const vector<T> &right) {
         return !(left > right);
     }
 
-    template<class R>
-    bool operator>(const vector<R> &left, const vector<R> &right) {
+    template<class T>
+    bool operator>(const vector<T> &left, const vector<T> &right) {
         size_t size = left.size() < right.size() ? left.size() : right.size();
         for (size_t i = 0; i < size; i++) {
-            if (*(reinterpret_cast<iterator>(_data + sizeof(T) * i)) >
-                *(reinterpret_cast<iterator>(right._data + sizeof(T) * i)))
+            if (*(reinterpret_cast<T *>(left._data + sizeof(T) * i)) >
+                *(reinterpret_cast<T *>(right._data + sizeof(T) * i)))
                 return true;
         }
         return false;
     }
 
-    template<class R>
-    bool operator>=(const vector<R> &left, const vector<R> &right) {
+    template<class T>
+    bool operator>=(const vector<T> &left, const vector<T> &right) {
         return !(left < right);
     }
 
