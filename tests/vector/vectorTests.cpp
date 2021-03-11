@@ -220,3 +220,169 @@ TEST(vector_tests, reserve) {
 
     EXPECT_EQ(vector.capacity(), 30);
 }
+
+TEST(vector_tests, capacity) {
+    mystd::vector<int> vector(20);
+
+    EXPECT_EQ(vector.capacity(), 20);
+
+    vector.push_back(1);
+
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 1.5));
+}
+
+TEST(vector_tests, shrink_to_fit) {
+    mystd::vector<int> vector(20);
+
+    EXPECT_EQ(vector.capacity(), 20);
+
+    vector.push_back(1);
+
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 1.5));
+
+    vector.shrink_to_fit();
+
+    EXPECT_EQ(vector.capacity(), vector.size());
+}
+
+TEST(vector_tests, clear) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    auto capacity = vector.capacity();
+
+    vector.clear();
+
+    EXPECT_EQ(vector.size(), 0);
+    EXPECT_EQ(vector.capacity(), capacity);
+}
+
+TEST(vector_tests, insert_copy) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+
+    auto it = vector.begin() + 2;
+    int value = 66;
+    auto res = vector.insert(it, value);
+
+    EXPECT_EQ(*res, value);
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+}
+
+TEST(vector_tests, insert_move) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+
+    auto it = vector.begin() + 2;
+    auto res = vector.insert(it, 66);
+
+    EXPECT_EQ(*res, 66);
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+}
+
+TEST(vector_tests, insert_count_copies) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+
+    auto it = vector.begin() + 2;
+    int value = 66;
+    auto res = vector.insert(it, 10, value);
+
+    for (auto i = res; i < res + 10; i++)
+        EXPECT_EQ(*i, value);
+
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+
+    res = vector.insert(it, 0, value);
+    EXPECT_EQ(res, it);
+}
+
+TEST(vector_tests, insert_range) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    std::vector<int> v{11, 12, 13, 14, 15};
+
+    auto size = vector.size();
+    auto it = vector.begin() + 2;
+    auto res = vector.insert(it, v.begin(), v.end());
+
+    for (auto[i, j] = std::tuple{res, v.begin()}; i < res + v.size(); i++, j++)
+        EXPECT_EQ(*i, *j);
+
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>((size + v.size()) * 1.5));
+
+    res = vector.insert(it, v.begin(), v.begin());
+    EXPECT_EQ(res, it);
+}
+
+TEST(vector_tests, insert_initializer_list) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    std::vector<int> v{11, 12, 13, 14, 15};
+
+    auto size = vector.size();
+    auto it = vector.begin() + 2;
+    auto res = vector.insert(it, {11, 12, 13, 14, 15});
+
+    for (auto[i, j] = std::tuple{res, v.begin()}; i < res + v.size(); i++, j++)
+        EXPECT_EQ(*i, *j);
+
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>((size + v.size()) * 1.5));
+
+    res = vector.insert(it, {});
+    EXPECT_EQ(res, it);
+}
+
+TEST(vector_tests, emplace) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+
+    auto it = vector.begin() + 2;
+    int value = 66;
+    auto res = vector.emplace(it, value);
+
+    EXPECT_EQ(*res, value);
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+}
+
+TEST(vector_tests, erase_element) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<int> v{1, 2, 4, 5, 6, 9, 22};
+
+    auto it = vector.begin() + 2;
+    auto res = vector.erase(it);
+
+    EXPECT_EQ(vector.size(), v.size());
+    for (size_t i = 0; i < vector.size(); i++)
+        EXPECT_EQ(vector[i], v[i]);
+
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+
+    auto last = vector.end() - 1;
+    res = vector.erase(last);
+
+    EXPECT_EQ(res, vector.end());
+}
+
+TEST(vector_tests, erase_elements) {
+    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<int> v{1, 2, 22};
+
+    auto it = vector.begin() + 2;
+    auto res = vector.erase(it, it + 4);
+
+    EXPECT_EQ(vector.size(), v.size());
+    for (size_t i = 0; i < vector.size(); i++)
+        EXPECT_EQ(vector[i], v[i]);
+
+    it = vector.begin() + 2;
+    EXPECT_EQ(res, it);
+
+    auto second = vector.begin() + 1;
+    auto last = vector.end() - 1;
+    res = vector.erase(second, last);
+
+    EXPECT_EQ(res, vector.end());
+
+}

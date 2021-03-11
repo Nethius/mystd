@@ -400,19 +400,19 @@ namespace mystd {
     template<class T>
     typename vector<T>::iterator vector<T>::insert(vector::const_iterator pos, size_t count, const_reference value) {
         if (!count)
-            return pos;
+            return const_cast<iterator>(pos);
         size_t index = pos - reinterpret_cast<iterator>(_data);
 
-        if (_size + n >= _capacity) {
-            reallocate((_size + n) * expansion_ratio);
+        if (_size + count >= _capacity) {
+            reallocate((_size + count) * expansion_ratio);
         }
 
         iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
-        move_backward(it + n, it, _size - index);
+        move_backward(it + count, it, _size - index);
 
-        for (size_t i = 0; i < n; i++)
+        for (size_t i = 0; i < count; i++)
             *(it + i) = value;
-        _size += n;
+        _size += count;
         return it;
     }
 
@@ -420,10 +420,10 @@ namespace mystd {
     template<class input_iterator, typename>
     typename vector<T>::iterator
     vector<T>::insert(vector::const_iterator pos, input_iterator first, input_iterator last) {
-        size_n n = std::distance(first, last);
+        size_t n = std::distance(first, last);
 
         if (!n)
-            return pos;
+            return const_cast<iterator>(pos);
         size_t index = pos - reinterpret_cast<iterator>(_data);
 
         if (_size + n >= _capacity) {
@@ -465,13 +465,13 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::erase(vector::const_iterator first, vector::const_iterator last) {
-        size_n n = 0;
-        for (input_iterator curr = first; curr != last; ++curr)
+        size_t n = 0;
+        for (auto curr = first; curr <= last; ++curr)
             ++n;
 
         if (!n)
-            return pos;
-        size_t index = pos - reinterpret_cast<iterator>(_data);
+            return const_cast<iterator>(last);
+        size_t index = first - reinterpret_cast<iterator>(_data);
 
         iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
         for (size_t i = 0; i < n; i++)
@@ -513,7 +513,7 @@ namespace mystd {
     template<class T>
     void vector<T>::clear() {
         for (auto it = begin(); it != end(); it++)
-            (*it)->~T();
+            (it)->~T();
         _size = 0;
     }
 
