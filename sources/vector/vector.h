@@ -167,7 +167,7 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(size_t size) : _size(size), _capacity(_size), _data(new char[sizeof(T) * size]) {
+    vector<T>::vector(size_t size) : _size(size), _capacity(_size), _data(new char[sizeof(T) * size]()) {
     }
 
     template<class T>
@@ -329,9 +329,9 @@ namespace mystd {
     void vector<T>::reallocate(size_t capacity) {
         _capacity = capacity;
 
-        char *new_data = new char[sizeof(T) * _capacity];
-        //memcpy(new_data, _data, sizeof(T) * _size);
+        char *new_data = new char[sizeof(T) * _capacity]();
         iterator new_begin = reinterpret_cast<iterator>(new_data);
+
         for (auto it = begin(); it != end(); it++)
             *new_begin++ = std::move(*it);
 
@@ -450,7 +450,7 @@ namespace mystd {
 
     template<class T>
     void vector<T>::pop_back() {
-        erase(cend());
+        erase(end() - 1);
     }
 
     template<class T>
@@ -458,7 +458,8 @@ namespace mystd {
         size_t index = pos - reinterpret_cast<iterator>(_data);
         iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
         it->~T();
-        move_forward(it, it + 1, _size - index);
+        if (pos != end() - 1)
+            move_forward(it, it + 1, _size - index);
         _size--;
         return it;
     }
@@ -477,7 +478,7 @@ namespace mystd {
         for (size_t i = 0; i < n; i++)
             (it + i)->~T();
 
-        move_forward(it, it + n, _size - index);
+        move_forward(it, it + n, _size - (index + n));
 
         _size -= n;
         return it;
@@ -496,7 +497,7 @@ namespace mystd {
     template<class T>
     template<typename... Args>
     void vector<T>::emplace_back(Args &&... args) {
-        emplace(end(), args);
+        emplace(end(), args ...);
     }
 
     template<class T>
@@ -521,18 +522,21 @@ namespace mystd {
     void vector<T>::resize(size_t count) {
         if (count > _capacity)
             reallocate(count * expansion_ratio);
+        _size = count;
     }
 
     template<class T>
     void vector<T>::resize(size_t count, const_reference value) {
         iterator it = reinterpret_cast<iterator>(_data);
         if (count > _size) {
+            size_t lastElementIndex = _size;
             resize(count);
-            for (size_t i = _size; i < count; i++)
-                (*it + i) = value;
+            it = begin();
+            for (size_t i = lastElementIndex; i < count; i++)
+                *(it + i) = value;
         } else {
             for (size_t i = count; i < _size; i++)
-                (*it + i).~T();
+                (it + i)->~T();
         }
         _size = count;
     }
@@ -541,10 +545,11 @@ namespace mystd {
     bool operator==(const vector<T> &left, const vector<T> &right) {
         if (left._size != right._size)
             return false;
-        for (size_t i = 0; i < left._size; i++)
+        for (size_t i = 0; i < left._size; i++) {
             if (*(reinterpret_cast<T *>(left._data + sizeof(T) * i)) !=
                 *(reinterpret_cast<T *>(right._data + sizeof(T) * i)))
                 return false;
+        }
         return true;
     }
 

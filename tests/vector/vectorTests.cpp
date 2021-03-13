@@ -2,29 +2,57 @@
 #include "vector/vector.h"
 #include "list"
 #include "vector"
+#include "string"
+
+struct TestData {
+    int _intValue;
+    std::string _stringValue;
+
+    TestData() : _intValue(0), _stringValue("") {};
+
+    TestData(int intValue, std::string stringValue) : _intValue(intValue), _stringValue(std::move(stringValue)) {}
+
+    bool operator==(const TestData &other) const {
+        return ((_intValue == other._intValue) && (_stringValue == other._stringValue));
+    }
+
+    bool operator!=(const TestData &other) const {
+        return !(*this == other);
+    }
+
+    TestData &operator=(const TestData &other) {
+        _intValue = other._intValue;
+        _stringValue.resize(other._stringValue.size());
+        _stringValue = other._stringValue;
+        return *this;
+    };
+};
 
 TEST(vector_tests, default_constructor) {
-    auto *vector = new mystd::vector<int>();
+    auto *vector = new mystd::vector<TestData>();
     EXPECT_NE(vector, nullptr);
 }
 
 TEST(vector_tests, constructor_with_count_default_inserted_instance_of_T) {
-    auto *vector = new mystd::vector<int>(100);
+    auto *vector = new mystd::vector<TestData>(100);
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), 100);
 }
 
 TEST(vector_tests, constructor_with_count_copies_of_given_value) {
-    auto *vector = new mystd::vector<int>(100, 5);
+    TestData testData(1, "one");
+    auto *vector = new mystd::vector<TestData>(100, testData);
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), 100);
-    for (auto v : *vector)
-        EXPECT_EQ(v, 5);
+    for (const auto &v : *vector)
+        EXPECT_EQ(v, testData);
 }
 
 TEST(vector_tests, range_based_constructor) {
-    std::list<int> list{1, 2, 3, 4, 5, 6, 9, 22};
-    auto *vector = new mystd::vector<int>(list.begin(), list.end());
+    std::list<TestData> list{{1, "one"},
+                             {2, "two"},
+                             {3, "three"}};
+    auto *vector = new mystd::vector<TestData>(list.begin(), list.end());
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), list.size());
 
@@ -33,8 +61,10 @@ TEST(vector_tests, range_based_constructor) {
 }
 
 TEST(vector_tests, copy_constructor) {
-    mystd::vector<int> base_vector{1, 2, 3, 4, 5, 6, 9, 22};
-    auto *vector = new mystd::vector<int>(base_vector);
+    mystd::vector<TestData> base_vector{{1, "one"},
+                                        {2, "two"},
+                                        {3, "three"}};
+    auto *vector = new mystd::vector<TestData>(base_vector);
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), base_vector.size());
 
@@ -44,10 +74,12 @@ TEST(vector_tests, copy_constructor) {
 }
 
 TEST(vector_tests, move_constructor) {
-    mystd::vector<int> base_vector{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> copied_vector(base_vector);
+    mystd::vector<TestData> base_vector{{1, "one"},
+                                        {2, "two"},
+                                        {3, "three"}};
+    mystd::vector<TestData> copied_vector(base_vector);
 
-    auto *vector = new mystd::vector<int>(std::move(base_vector));
+    auto *vector = new mystd::vector<TestData>(std::move(base_vector));
 
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), copied_vector.size());
@@ -58,9 +90,13 @@ TEST(vector_tests, move_constructor) {
 }
 
 TEST(vector_tests, initializer_list_constructor) {
-    std::vector<int> base_vector{1, 2, 3, 4, 5, 6, 9, 22};
+    std::vector<TestData> base_vector{{1, "one"},
+                                      {2, "two"},
+                                      {3, "three"}};
 
-    auto *vector = new mystd::vector<int>{1, 2, 3, 4, 5, 6, 9, 22};
+    auto *vector = new mystd::vector<TestData>{{1, "one"},
+                                               {2, "two"},
+                                               {3, "three"}};
 
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), base_vector.size());
@@ -71,19 +107,22 @@ TEST(vector_tests, initializer_list_constructor) {
 }
 
 TEST(vector_tests, assign_value) {
-    auto *vector = new mystd::vector<int>;
+    TestData testData(1, "one");
+    auto *vector = new mystd::vector<TestData>;
     EXPECT_NE(vector, nullptr);
-    vector->assign(10, 45);
+    vector->assign(10, testData);
 
     EXPECT_EQ(vector->size(), 10);
 
-    for (auto v : *vector)
-        EXPECT_EQ(v, 45);
+    for (const auto &v : *vector)
+        EXPECT_EQ(v, testData);
 }
 
 TEST(vector_tests, assign_range) {
-    auto *vector = new mystd::vector<int>;
-    std::vector<int> base_vector{1, 2, 3, 4, 5, 6, 9, 22};
+    auto *vector = new mystd::vector<TestData>;
+    std::vector<TestData> base_vector{{1, "one"},
+                                      {2, "two"},
+                                      {3, "three"}};
     EXPECT_NE(vector, nullptr);
     vector->assign(base_vector.begin(), base_vector.end());
 
@@ -95,8 +134,10 @@ TEST(vector_tests, assign_range) {
 }
 
 TEST(vector_tests, copy_assignment_operator) {
-    auto *vector = new mystd::vector<int>;
-    mystd::vector<int> base_vector{1, 2, 3, 4, 5, 6, 9, 22};
+    auto *vector = new mystd::vector<TestData>;
+    mystd::vector<TestData> base_vector{{1, "one"},
+                                        {2, "two"},
+                                        {3, "three"}};
 
     EXPECT_NE(vector, nullptr);
     *vector = base_vector;
@@ -109,9 +150,11 @@ TEST(vector_tests, copy_assignment_operator) {
 }
 
 TEST(vector_tests, move_assignment_operator) {
-    mystd::vector<int> base_vector{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> copied_vector(base_vector);
-    auto *vector = new mystd::vector<int>;
+    mystd::vector<TestData> base_vector{{1, "one"},
+                                        {2, "two"},
+                                        {3, "three"}};
+    mystd::vector<TestData> copied_vector(base_vector);
+    auto *vector = new mystd::vector<TestData>;
 
     EXPECT_NE(vector, nullptr);
     *vector = std::move(base_vector);
@@ -124,8 +167,10 @@ TEST(vector_tests, move_assignment_operator) {
 }
 
 TEST(vector_tests, access_operator) {
-    std::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> vector(v.begin(), v.end());
+    std::vector<TestData> v{{1, "one"},
+                            {2, "two"},
+                            {3, "three"}};
+    mystd::vector<TestData> vector(v.begin(), v.end());
 
     EXPECT_EQ(v.size(), vector.size());
 
@@ -134,8 +179,10 @@ TEST(vector_tests, access_operator) {
 }
 
 TEST(vector_tests, front) {
-    std::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> vector(v.begin(), v.end());
+    std::vector<TestData> v{{1, "one"},
+                            {2, "two"},
+                            {3, "three"}};
+    mystd::vector<TestData> vector(v.begin(), v.end());
 
     EXPECT_EQ(v.size(), vector.size());
 
@@ -143,8 +190,10 @@ TEST(vector_tests, front) {
 }
 
 TEST(vector_tests, back) {
-    std::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> vector(v.begin(), v.end());
+    std::vector<TestData> v{{1, "one"},
+                            {2, "two"},
+                            {3, "three"}};
+    mystd::vector<TestData> vector(v.begin(), v.end());
 
     EXPECT_EQ(v.size(), vector.size());
 
@@ -152,7 +201,9 @@ TEST(vector_tests, back) {
 }
 
 TEST(vector_tests, data) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
 
     EXPECT_EQ(*(vector.data()), vector.front());
 
@@ -160,8 +211,10 @@ TEST(vector_tests, data) {
 }
 
 TEST(vector_tests, begin) {
-    mystd::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    auto *vector = new mystd::vector<int>;
+    mystd::vector<TestData> v{{1, "one"},
+                              {2, "two"},
+                              {3, "three"}};
+    auto *vector = new mystd::vector<TestData>;
 
     EXPECT_NE(vector, nullptr);
 
@@ -173,8 +226,10 @@ TEST(vector_tests, begin) {
 }
 
 TEST(vector_tests, end) {
-    mystd::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    auto *vector = new mystd::vector<int>;
+    mystd::vector<TestData> v{{1, "one"},
+                              {2, "two"},
+                              {3, "three"}};
+    auto *vector = new mystd::vector<TestData>;
 
     EXPECT_NE(vector, nullptr);
 
@@ -182,12 +237,14 @@ TEST(vector_tests, end) {
 
     *vector = v;
 
-    EXPECT_EQ(*(vector->end()), v[v.size()]);
+    EXPECT_EQ(*(vector->end() - 1), v[v.size() - 1]);
 }
 
 TEST(vector_tests, empty) {
-    mystd::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    auto *vector = new mystd::vector<int>;
+    mystd::vector<TestData> v{{1, "one"},
+                              {2, "two"},
+                              {3, "three"}};
+    auto *vector = new mystd::vector<TestData>;
 
     EXPECT_EQ(vector->empty(), true);
 
@@ -197,8 +254,10 @@ TEST(vector_tests, empty) {
 }
 
 TEST(vector_tests, size) {
-    mystd::vector<int> v{1, 2, 3, 4, 5, 6, 9, 22};
-    auto *vector = new mystd::vector<int>;
+    mystd::vector<TestData> v{{1, "one"},
+                              {2, "two"},
+                              {3, "three"}};
+    auto *vector = new mystd::vector<TestData>;
 
     EXPECT_EQ(vector->size(), 0);
 
@@ -208,7 +267,7 @@ TEST(vector_tests, size) {
 }
 
 TEST(vector_tests, reserve) {
-    mystd::vector<int> vector(20);
+    mystd::vector<TestData> vector(20);
 
     EXPECT_EQ(vector.capacity(), 20);
 
@@ -222,21 +281,21 @@ TEST(vector_tests, reserve) {
 }
 
 TEST(vector_tests, capacity) {
-    mystd::vector<int> vector(20);
+    mystd::vector<TestData> vector(20);
 
     EXPECT_EQ(vector.capacity(), 20);
 
-    vector.push_back(1);
+    vector.push_back({1, "one"});
 
     EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 1.5));
 }
 
 TEST(vector_tests, shrink_to_fit) {
-    mystd::vector<int> vector(20);
+    mystd::vector<TestData> vector(20);
 
     EXPECT_EQ(vector.capacity(), 20);
 
-    vector.push_back(1);
+    vector.push_back({1, "one"});
 
     EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 1.5));
 
@@ -246,7 +305,9 @@ TEST(vector_tests, shrink_to_fit) {
 }
 
 TEST(vector_tests, clear) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
     auto capacity = vector.capacity();
 
     vector.clear();
@@ -256,48 +317,59 @@ TEST(vector_tests, clear) {
 }
 
 TEST(vector_tests, insert_copy) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
 
     auto it = vector.begin() + 2;
-    int value = 66;
-    auto res = vector.insert(it, value);
+    TestData testData(4, "four");
+    auto res = vector.insert(it, testData);
 
-    EXPECT_EQ(*res, value);
+    EXPECT_EQ(*res, testData);
     it = vector.begin() + 2;
     EXPECT_EQ(res, it);
 }
 
 TEST(vector_tests, insert_move) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
 
     auto it = vector.begin() + 2;
-    auto res = vector.insert(it, 66);
+    TestData testData(4, "four");
+    auto res = vector.insert(it, std::move(testData));
 
-    EXPECT_EQ(*res, 66);
+    EXPECT_EQ(*res, TestData(4, "four"));
     it = vector.begin() + 2;
     EXPECT_EQ(res, it);
 }
 
 TEST(vector_tests, insert_count_copies) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
 
     auto it = vector.begin() + 2;
-    int value = 66;
-    auto res = vector.insert(it, 10, value);
+    TestData testData(4, "four");
+    auto res = vector.insert(it, 10, testData);
 
     for (auto i = res; i < res + 10; i++)
-        EXPECT_EQ(*i, value);
+        EXPECT_EQ(*i, testData);
 
     it = vector.begin() + 2;
     EXPECT_EQ(res, it);
 
-    res = vector.insert(it, 0, value);
+    res = vector.insert(it, 0, testData);
     EXPECT_EQ(res, it);
 }
 
 TEST(vector_tests, insert_range) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
-    std::vector<int> v{11, 12, 13, 14, 15};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+    std::vector<TestData> v{{4, "four"},
+                            {5, "five"},
+                            {6, "six"}};
 
     auto size = vector.size();
     auto it = vector.begin() + 2;
@@ -315,12 +387,18 @@ TEST(vector_tests, insert_range) {
 }
 
 TEST(vector_tests, insert_initializer_list) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
-    std::vector<int> v{11, 12, 13, 14, 15};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+    std::vector<TestData> v{{4, "four"},
+                            {5, "five"},
+                            {6, "six"}};
 
     auto size = vector.size();
     auto it = vector.begin() + 2;
-    auto res = vector.insert(it, {11, 12, 13, 14, 15});
+    auto res = vector.insert(it, {{4, "four"},
+                                  {5, "five"},
+                                  {6, "six"}});
 
     for (auto[i, j] = std::tuple{res, v.begin()}; i < res + v.size(); i++, j++)
         EXPECT_EQ(*i, *j);
@@ -334,20 +412,25 @@ TEST(vector_tests, insert_initializer_list) {
 }
 
 TEST(vector_tests, emplace) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
 
     auto it = vector.begin() + 2;
-    int value = 66;
-    auto res = vector.emplace(it, value);
+    TestData testData(4, "four");
+    auto res = vector.emplace(it, testData);
 
-    EXPECT_EQ(*res, value);
+    EXPECT_EQ(*res, testData);
     it = vector.begin() + 2;
     EXPECT_EQ(res, it);
 }
 
 TEST(vector_tests, erase_element) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> v{1, 2, 4, 5, 6, 9, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+    mystd::vector<TestData> v{{1, "one"},
+                              {2, "two"}};
 
     auto it = vector.begin() + 2;
     auto res = vector.erase(it);
@@ -366,11 +449,18 @@ TEST(vector_tests, erase_element) {
 }
 
 TEST(vector_tests, erase_elements) {
-    mystd::vector<int> vector{1, 2, 3, 4, 5, 6, 9, 22};
-    mystd::vector<int> v{1, 2, 22};
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"},
+                                   {4, "four"},
+                                   {5, "five"},
+                                   {6, "six"}};
+    mystd::vector<TestData> v{{1, "one"},
+                              {2, "two"},
+                              {6, "six"}};
 
     auto it = vector.begin() + 2;
-    auto res = vector.erase(it, it + 4);
+    auto res = vector.erase(it, it + 2);
 
     EXPECT_EQ(vector.size(), v.size());
     for (size_t i = 0; i < vector.size(); i++)
@@ -385,4 +475,93 @@ TEST(vector_tests, erase_elements) {
 
     EXPECT_EQ(res, vector.end());
 
+}
+
+TEST(vector_tests, push_back_copy) {
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+
+    TestData testData(4, "four");
+    auto size = vector.size();
+    vector.push_back(testData);
+
+    EXPECT_EQ(vector.back(), testData);
+
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 1.5));
+}
+
+TEST(vector_tests, push_back_move) {
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+
+    TestData testData(4, "four");
+    auto size = vector.size();
+    vector.push_back(std::move(testData));
+
+    EXPECT_EQ(vector.back(), TestData(4, "four"));
+
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 1.5));
+}
+
+TEST(vector_tests, emplace_back) {
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+
+    TestData testData(4, "four");
+    auto size = vector.size();
+    vector.emplace_back(testData);
+
+    EXPECT_EQ(vector.back(), testData);
+
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 1.5));
+}
+
+TEST(vector_tests, pop_back) {
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+
+    auto size = vector.size();
+    vector.pop_back();
+
+    EXPECT_EQ(vector.size(), size - 1);
+}
+
+TEST(vector_tests, resize) {
+    mystd::vector<TestData> vector;
+
+    vector.resize(10);
+
+    EXPECT_EQ(vector.size(), 10);
+}
+
+TEST(vector_tests, resize_with_value) {
+    mystd::vector<TestData> vector;
+
+    TestData testData(4, "four");
+    vector.resize(10, testData);
+
+    EXPECT_EQ(vector.size(), 10);
+
+    for (const auto &v : vector)
+        EXPECT_EQ(v, testData);
+
+    vector.resize(5, testData);
+
+    EXPECT_EQ(vector.size(), 5);
+}
+
+TEST(vector_tests, operators) {
+    mystd::vector<TestData> vector{{1, "one"},
+                                   {2, "two"},
+                                   {3, "three"}};
+
+    mystd::vector<TestData> v{{4, "four"},
+                              {5, "five"},
+                              {6, "six"}};
+
+    EXPECT_EQ(true, vector != v);
 }
