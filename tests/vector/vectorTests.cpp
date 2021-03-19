@@ -287,7 +287,7 @@ TEST(vector_tests, capacity) {
 
     vector.push_back({1, "one"});
 
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 2));
 }
 
 TEST(vector_tests, shrink_to_fit) {
@@ -297,7 +297,7 @@ TEST(vector_tests, shrink_to_fit) {
 
     vector.push_back({1, "one"});
 
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(20 * 2));
 
     vector.shrink_to_fit();
 
@@ -380,7 +380,7 @@ TEST(vector_tests, insert_range) {
 
     it = vector.begin() + 2;
     EXPECT_EQ(res, it);
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>((size + v.size()) * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>((size + v.size()) * 2));
 
     res = vector.insert(it, v.begin(), v.begin());
     EXPECT_EQ(res, it);
@@ -405,7 +405,7 @@ TEST(vector_tests, insert_initializer_list) {
 
     it = vector.begin() + 2;
     EXPECT_EQ(res, it);
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>((size + v.size()) * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>((size + v.size()) * 2));
 
     res = vector.insert(it, {});
     EXPECT_EQ(res, it);
@@ -488,7 +488,7 @@ TEST(vector_tests, push_back_copy) {
 
     EXPECT_EQ(vector.back(), testData);
 
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 2));
 }
 
 TEST(vector_tests, push_back_move) {
@@ -502,7 +502,7 @@ TEST(vector_tests, push_back_move) {
 
     EXPECT_EQ(vector.back(), TestData(4, "four"));
 
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 2));
 }
 
 TEST(vector_tests, emplace_back) {
@@ -516,7 +516,7 @@ TEST(vector_tests, emplace_back) {
 
     EXPECT_EQ(vector.back(), testData);
 
-    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 1.5));
+    EXPECT_EQ(vector.capacity(), static_cast<size_t>(size * 2));
 }
 
 TEST(vector_tests, pop_back) {
