@@ -160,19 +160,27 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(size_t size) : _size(size), _capacity(_size),
-                                     _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * size]())) {
+    vector<T>::vector(size_t size) :
+            _size(size), _capacity(_size),
+            _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * _size]())) {
+        for (size_t i = 0; i < _size; i++) {
+            new(_data + i) T();
+        }
     }
 
     template<class T>
-    vector<T>::vector(size_t size, const T& initial) : vector(size) {
+    vector<T>::vector(size_t size, const T& initial) :
+            _size(size), _capacity(_size),
+            _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * _size]())) {
         for (size_t i = 0; i < _size; i++) {
             new(_data + i) T(initial);
         }
     }
 
     template<class T>
-    vector<T>::vector(const vector<T>& v) : vector(v._size) {
+    vector<T>::vector(const vector<T>& v) :
+            _size(v._size), _capacity(_size),
+            _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * _size])) {
         for (size_t i = 0; i < _size; i++) {
             new(_data + i) T(v[i]);
         }
@@ -184,7 +192,9 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(std::initializer_list<T> list) : vector(list.size()) {
+    vector<T>::vector(std::initializer_list<T> list) :
+            _size(list.size()), _capacity(_size),
+            _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * _size])) {
         for (size_t i = 0; i < _size; i++) {
             new(_data + i) T(*(list.begin() + i));
         }
@@ -192,16 +202,19 @@ namespace mystd {
 
     template<class T>
     template<class input_iterator>
-    vector<T>::vector(input_iterator first, input_iterator last) : vector(std::distance(first, last)) {
+    vector<T>::vector(input_iterator first, input_iterator last) :
+            _size(std::distance(first, last)), _capacity(_size),
+            _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * _size])) {
         auto it = first;
         for (size_t i = 0; i < _size; i++) {
-            new(_data + i) T(*(it));
-            it = std::next(it);
+            new(_data + i) T(*(it++));
         }
     }
 
     template<class T>
-    vector<T>::vector(const vector<T>& v, size_t capacity) : vector(capacity) {
+    vector<T>::vector(const vector<T>& v, size_t capacity) :
+            _size(capacity), _capacity(_size),
+            _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * _size])) {
         _size = v._size;
         for (size_t i = 0; i < v._size; i++) {
             new(_data + i) T(v[i]);
@@ -210,8 +223,9 @@ namespace mystd {
 
     template<class T>
     vector<T>::~vector() {
-        for (size_t i = 0; i < _size; i++)
+        for (size_t i = 0; i < _size; i++) {
             _data->~T();
+        }
     }
 
     template<class T>
@@ -433,8 +447,7 @@ namespace mystd {
         auto from = first;
 
         for (size_t i = 0; i < n; i++) {
-            new(dest + i) T(*(from));
-            from = std::next(from);
+            new(dest + i) T(*(from++));
         }
         _size += n;
         return dest;
