@@ -8,11 +8,13 @@ namespace mystd {
     class vector {
         size_t _size;
         size_t _capacity;
-        char* _data;
+        T* _data;
         using iterator = T*;
         using const_iterator = const T*;
         using reference = T&;
         using const_reference = const T&;
+
+        vector(const vector<T>& v, size_t capacity);
 
         void reallocate(size_t capacity);
 
@@ -138,19 +140,19 @@ namespace mystd {
 
         void swap(vector<T>& other) noexcept;
 
-        friend void swap(vector<T>& left, vector<T>& right) noexcept;
+        friend void swap(vector& left, vector& right) { left.swap(right); }
 
-        friend bool operator==(const vector<T>& left, const vector<T>& right);
+        bool operator==(const vector<T>& other);
 
-        friend bool operator!=(const vector<T>& left, const vector<T>& right);
+        bool operator!=(const vector<T>& other);
 
-        friend bool operator<(const vector<T>& left, const vector<T>& right);
+        bool operator<(const vector<T>& other);
 
-        friend bool operator<=(const vector<T>& left, const vector<T>& right);
+        bool operator<=(const vector<T>& other);
 
-        friend bool operator>(const vector<T>& left, const vector<T>& right);
+        bool operator>(const vector<T>& other);
 
-        friend bool operator>=(const vector<T>& left, const vector<T>& right);
+        bool operator>=(const vector<T>& other);
     };
 
     template<class T>
@@ -158,20 +160,21 @@ namespace mystd {
     }
 
     template<class T>
-    vector<T>::vector(size_t size) : _size(size), _capacity(_size), _data(new char[sizeof(T) * size]()) {
+    vector<T>::vector(size_t size) : _size(size), _capacity(_size),
+                                     _data(reinterpret_cast<T*>(new std::byte[sizeof(T) * size]())) {
     }
 
     template<class T>
     vector<T>::vector(size_t size, const T& initial) : vector(size) {
         for (size_t i = 0; i < _size; i++) {
-            new(_data + sizeof(T) * i) T(initial);
+            new(_data + i) T(initial);
         }
     }
 
     template<class T>
     vector<T>::vector(const vector<T>& v) : vector(v._size) {
         for (size_t i = 0; i < _size; i++) {
-            new(_data + sizeof(T) * i) T(v[i]);
+            new(_data + i) T(v[i]);
         }
     }
 
@@ -183,7 +186,7 @@ namespace mystd {
     template<class T>
     vector<T>::vector(std::initializer_list<T> list) : vector(list.size()) {
         for (size_t i = 0; i < _size; i++) {
-            new(_data + sizeof(T) * i) T(*(list.begin() + i));
+            new(_data + i) T(*(list.begin() + i));
         }
     }
 
@@ -192,24 +195,33 @@ namespace mystd {
     vector<T>::vector(input_iterator first, input_iterator last) : vector(std::distance(first, last)) {
         auto it = first;
         for (size_t i = 0; i < _size; i++) {
-            new(_data + sizeof(T) * i) T(*(it));
+            new(_data + i) T(*(it));
             it = std::next(it);
         }
     }
 
     template<class T>
+    vector<T>::vector(const vector<T>& v, size_t capacity) : vector(capacity) {
+        _size = v._size;
+        for (size_t i = 0; i < v._size; i++) {
+            new(_data + i) T(v[i]);
+        }
+    }
+
+    template<class T>
     vector<T>::~vector() {
-        delete[] _data;
+        for (size_t i = 0; i < _size; i++)
+            _data->~T();
     }
 
     template<class T>
     T& vector<T>::operator[](size_t pos) {
-        return *(reinterpret_cast<iterator>(_data + sizeof(T) * pos));
+        return *(_data + pos);
     }
 
     template<class T>
     const T& vector<T>::operator[](size_t pos) const {
-        return *(reinterpret_cast<iterator>(_data + sizeof(T) * pos));
+        return *(_data + pos);
     }
 
     template<class T>
@@ -227,12 +239,12 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::begin() {
-        return reinterpret_cast<iterator>(_data);
+        return _data;
     }
 
     template<class T>
     typename vector<T>::const_iterator vector<T>::begin() const {
-        return reinterpret_cast<iterator>(_data);
+        return _data;
     }
 
     template<class T>
@@ -242,12 +254,12 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::end() {
-        return reinterpret_cast<iterator>(_data + sizeof(T) * _size);
+        return _data + _size;
     }
 
     template<class T>
     typename vector<T>::const_iterator vector<T>::end() const {
-        return reinterpret_cast<iterator>(_data + sizeof(T) * _size);
+        return _data + _size;
     }
 
     template<class T>
@@ -291,11 +303,6 @@ namespace mystd {
     }
 
     template<class T>
-    void swap(vector<T>& left, vector<T>& right) noexcept {
-        left.swap(right);
-    }
-
-    template<class T>
     void vector<T>::push_back(const T& value) {
         if (_size >= _capacity) {
             reallocate(_size * expansion_ratio);
@@ -309,23 +316,15 @@ namespace mystd {
         if (_size >= _capacity) {
             reallocate(_size * expansion_ratio);
         }
-        *end() = std::move(value);
+        new(end()) T(std::move(value));
         _size++;
     }
 
     template<class T>
     void vector<T>::reallocate(size_t capacity) {
-        _capacity = capacity;
+        vector<T> newVector(*this, capacity);
 
-        char* new_data = new char[sizeof(T) * _capacity]();
-        iterator new_begin = reinterpret_cast<iterator>(new_data);
-
-        for (auto it = begin(); it != end(); it++) {
-            *new_begin++ = std::move(*it);
-        }
-
-        delete[] _data;
-        _data = new_data;
+        swap(newVector);
     }
 
     template<class T>
@@ -348,7 +347,7 @@ namespace mystd {
         iterator _dest = dest + count - 1;
         iterator _from = from + count - 1;
         for (size_t i = count; i > 0; i--) {
-            *_dest-- = std::move(*_from--);
+            new(_dest--) T(std::move(*_from--));
         }
     }
 
@@ -368,16 +367,16 @@ namespace mystd {
     template<class T>
     template<typename... Args>
     typename vector<T>::iterator vector<T>::emplace(vector::const_iterator pos, Args&& ... args) {
-        size_t index = pos - reinterpret_cast<iterator>(_data);
+        size_t index = pos - _data;
 
         if (_size >= _capacity) {
             reallocate(_size * expansion_ratio);
         }
 
-        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        iterator it = _data + index;
         move_backward(it + 1, it, _size - index);
 
-        *it = T(std::forward<Args>(args) ...);
+        new(it) T(std::forward<Args>(args) ...);
         _size++;
         return it;
     }
@@ -397,17 +396,17 @@ namespace mystd {
         if (!count) {
             return const_cast<iterator>(pos);
         }
-        size_t index = pos - reinterpret_cast<iterator>(_data);
+        size_t index = pos - _data;
 
         if (_size + count >= _capacity) {
             reallocate((_size + count) * expansion_ratio);
         }
 
-        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        iterator it = _data + index;
         move_backward(it + count, it, _size - index);
 
         for (size_t i = 0; i < count; i++) {
-            *(it + i) = value;
+            new(it + i) T(value);
         }
         _size += count;
         return it;
@@ -422,19 +421,19 @@ namespace mystd {
         if (!n) {
             return const_cast<iterator>(pos);
         }
-        size_t index = pos - reinterpret_cast<iterator>(_data);
+        size_t index = pos - _data;
 
         if (_size + n >= _capacity) {
             reallocate((_size + n) * expansion_ratio);
         }
 
-        iterator dest = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        iterator dest = _data + index;
         move_backward(dest + n, dest, _size - index);
 
         auto from = first;
 
         for (size_t i = 0; i < n; i++) {
-            *(dest + i) = *(from);
+            new(dest + i) T(*(from));
             from = std::next(from);
         }
         _size += n;
@@ -453,8 +452,8 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::erase(vector::const_iterator pos) {
-        size_t index = pos - reinterpret_cast<iterator>(_data);
-        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        size_t index = pos - _data;
+        iterator it = _data + index;
         it->~T();
         if (pos != end() - 1) {
             move_forward(it, it + 1, _size - index);
@@ -473,9 +472,9 @@ namespace mystd {
         if (!n) {
             return const_cast<iterator>(last);
         }
-        size_t index = first - reinterpret_cast<iterator>(_data);
+        size_t index = first - _data;
 
-        iterator it = reinterpret_cast<iterator>(_data + sizeof(T) * index);
+        iterator it = _data + index;
         for (size_t i = 0; i < n; i++) {
             (it + i)->~T();
         }
@@ -488,7 +487,7 @@ namespace mystd {
 
     template<class T>
     typename vector<T>::iterator vector<T>::data() {
-        return reinterpret_cast<iterator>(_data);
+        return _data;
     }
 
     template<class T>
@@ -524,21 +523,27 @@ namespace mystd {
 
     template<class T>
     void vector<T>::resize(size_t count) {
+        iterator it = _data;
         if (count > _capacity) {
             reallocate(count * expansion_ratio);
+        }
+        else {
+            for (size_t i = count; i < _size; i++) {
+                (it + i)->~T();
+            }
         }
         _size = count;
     }
 
     template<class T>
     void vector<T>::resize(size_t count, const T& value) {
-        iterator it = reinterpret_cast<iterator>(_data);
+        iterator it = _data;
         if (count > _size) {
             size_t lastElementIndex = _size;
             resize(count);
             it = begin();
             for (size_t i = lastElementIndex; i < count; i++) {
-                *(it + i) = value;
+                new(it + i) T(value);
             }
         }
         else {
@@ -550,13 +555,12 @@ namespace mystd {
     }
 
     template<class T>
-    bool operator==(const vector<T>& left, const vector<T>& right) {
-        if (left._size != right._size) {
+    bool vector<T>::operator==(const vector<T>& other) {
+        if (_size != other._size) {
             return false;
         }
-        for (size_t i = 0; i < left._size; i++) {
-            if (*(reinterpret_cast<T*>(left._data + sizeof(T) * i)) !=
-                *(reinterpret_cast<T*>(right._data + sizeof(T) * i))) {
+        for (size_t i = 0; i < _size; i++) {
+            if (*(_data + i) != *(other._data + i)) {
                 return false;
             }
         }
@@ -564,16 +568,15 @@ namespace mystd {
     }
 
     template<class T>
-    bool operator!=(const vector<T>& left, const vector<T>& right) {
-        return !(left == right);
+    bool vector<T>::operator!=(const vector<T>& other) {
+        return !(*this == other);
     }
 
     template<class T>
-    bool operator<(const vector<T>& left, const vector<T>& right) {
-        size_t size = left.size() < right.size() ? left.size() : right.size();
-        for (size_t i = 0; i < size; i++) {
-            if (*(reinterpret_cast<T*>(left._data + sizeof(T) * i)) <
-                *(reinterpret_cast<T*>(right._data + sizeof(T) * i))) {
+    bool vector<T>::operator<(const vector<T>& other) {
+        size_t max_size = size() < other.size() ? size() : other.size();
+        for (size_t i = 0; i < max_size; i++) {
+            if (*(_data + i) < *(other._data + i)) {
                 return true;
             }
         }
@@ -581,16 +584,15 @@ namespace mystd {
     }
 
     template<class T>
-    bool operator<=(const vector<T>& left, const vector<T>& right) {
-        return !(left > right);
+    bool vector<T>::operator<=(const vector<T>& other) {
+        return !(*this > other);
     }
 
     template<class T>
-    bool operator>(const vector<T>& left, const vector<T>& right) {
-        size_t size = left.size() < right.size() ? left.size() : right.size();
-        for (size_t i = 0; i < size; i++) {
-            if (*(reinterpret_cast<T*>(left._data + sizeof(T) * i)) >
-                *(reinterpret_cast<T*>(right._data + sizeof(T) * i))) {
+    bool vector<T>::operator>(const vector<T>& other) {
+        size_t max_size = size() < other.size() ? size() : other.size();
+        for (size_t i = 0; i < max_size; i++) {
+            if (*(_data + i) > *(other._data + i)) {
                 return true;
             }
         }
@@ -598,8 +600,8 @@ namespace mystd {
     }
 
     template<class T>
-    bool operator>=(const vector<T>& left, const vector<T>& right) {
-        return !(left < right);
+    bool vector<T>::operator>=(const vector<T>& other) {
+        return !(*this < other);
     }
 
     template<class T>
@@ -609,8 +611,6 @@ namespace mystd {
         swap(_capacity, other._capacity);
         swap(_data, other._data);
     }
-
-
 }
 
 #endif //MYSTD_VECTOR_H
