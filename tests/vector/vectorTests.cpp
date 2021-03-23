@@ -29,19 +29,19 @@ struct TestData {
 };
 
 TEST(vector_tests, default_constructor) {
-    auto* vector = new mystd::vector<TestData>();
+    auto vector = std::make_unique<mystd::vector<TestData>>();
     EXPECT_NE(vector, nullptr);
 }
 
 TEST(vector_tests, constructor_with_count_default_inserted_instance_of_T) {
-    auto* vector = new mystd::vector<TestData>(100);
+    auto vector = std::make_unique<mystd::vector<TestData>>(100);
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), 100);
 }
 
 TEST(vector_tests, constructor_with_count_copies_of_given_value) {
     TestData testData(1, "one");
-    auto* vector = new mystd::vector<TestData>(100, testData);
+    auto vector = std::make_unique<mystd::vector<TestData>>(100, testData);
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), 100);
     for (const auto& v : *vector)
@@ -52,7 +52,7 @@ TEST(vector_tests, range_based_constructor) {
     std::list<TestData> list{{1, "one"},
                              {2, "two"},
                              {3, "three"}};
-    auto* vector = new mystd::vector<TestData>(list.begin(), list.end());
+    auto vector = std::make_unique<mystd::vector<TestData>>(list.begin(), list.end());
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), list.size());
 
@@ -64,7 +64,7 @@ TEST(vector_tests, copy_constructor) {
     mystd::vector<TestData> base_vector{{1, "one"},
                                         {2, "two"},
                                         {3, "three"}};
-    auto* vector = new mystd::vector<TestData>(base_vector);
+    auto vector = std::make_unique<mystd::vector<TestData>>(base_vector);
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), base_vector.size());
 
@@ -79,7 +79,7 @@ TEST(vector_tests, move_constructor) {
                                         {3, "three"}};
     mystd::vector<TestData> copied_vector(base_vector);
 
-    auto* vector = new mystd::vector<TestData>(std::move(base_vector));
+    auto vector = std::make_unique<mystd::vector<TestData>>(std::move(base_vector));
 
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), copied_vector.size());
@@ -94,9 +94,9 @@ TEST(vector_tests, initializer_list_constructor) {
                                       {2, "two"},
                                       {3, "three"}};
 
-    auto* vector = new mystd::vector<TestData>{{1, "one"},
-                                               {2, "two"},
-                                               {3, "three"}};
+    auto vector = std::make_unique<mystd::vector<TestData>>(std::initializer_list<TestData>({{1, "one"},
+                                                                                             {2, "two"},
+                                                                                             {3, "three"}}));
 
     EXPECT_NE(vector, nullptr);
     EXPECT_EQ(vector->size(), base_vector.size());
@@ -108,7 +108,7 @@ TEST(vector_tests, initializer_list_constructor) {
 
 TEST(vector_tests, assign_value) {
     TestData testData(1, "one");
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
     EXPECT_NE(vector, nullptr);
     vector->assign(10, testData);
 
@@ -119,7 +119,7 @@ TEST(vector_tests, assign_value) {
 }
 
 TEST(vector_tests, assign_range) {
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
     std::vector<TestData> base_vector{{1, "one"},
                                       {2, "two"},
                                       {3, "three"}};
@@ -134,7 +134,7 @@ TEST(vector_tests, assign_range) {
 }
 
 TEST(vector_tests, copy_assignment_operator) {
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
     mystd::vector<TestData> base_vector{{1, "one"},
                                         {2, "two"},
                                         {3, "three"}};
@@ -154,7 +154,7 @@ TEST(vector_tests, move_assignment_operator) {
                                         {2, "two"},
                                         {3, "three"}};
     mystd::vector<TestData> copied_vector(base_vector);
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
 
     EXPECT_NE(vector, nullptr);
     *vector = std::move(base_vector);
@@ -214,7 +214,7 @@ TEST(vector_tests, begin) {
     mystd::vector<TestData> v{{1, "one"},
                               {2, "two"},
                               {3, "three"}};
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
 
     EXPECT_NE(vector, nullptr);
 
@@ -229,7 +229,7 @@ TEST(vector_tests, end) {
     mystd::vector<TestData> v{{1, "one"},
                               {2, "two"},
                               {3, "three"}};
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
 
     EXPECT_NE(vector, nullptr);
 
@@ -244,7 +244,7 @@ TEST(vector_tests, empty) {
     mystd::vector<TestData> v{{1, "one"},
                               {2, "two"},
                               {3, "three"}};
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
 
     EXPECT_EQ(vector->empty(), true);
 
@@ -257,7 +257,7 @@ TEST(vector_tests, size) {
     mystd::vector<TestData> v{{1, "one"},
                               {2, "two"},
                               {3, "three"}};
-    auto* vector = new mystd::vector<TestData>;
+    auto vector = std::make_unique<mystd::vector<TestData>>();
 
     EXPECT_EQ(vector->size(), 0);
 
@@ -538,8 +538,8 @@ TEST(vector_tests, resize) {
                                    {2, "two"},
                                    {3, "three"}};
     std::vector<TestData> base_vector{{1, "one"},
-                                   {2, "two"},
-                                   {3, "three"}};
+                                      {2, "two"},
+                                      {3, "three"}};
     vector.resize(10);
 
     EXPECT_EQ(vector.size(), 10);

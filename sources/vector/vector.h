@@ -226,6 +226,13 @@ namespace mystd {
         for (size_t i = 0; i < _size; i++) {
             _data->~T();
         }
+
+//        auto it = _data + _size;
+        auto p = reinterpret_cast<std::byte*>(_data);
+        delete[](p);
+//        for (size_t i = 0; i < sizeof(T) * (_capacity - _size); i++){
+//
+//        }
     }
 
     template<class T>
@@ -537,8 +544,15 @@ namespace mystd {
     template<class T>
     void vector<T>::resize(size_t count) {
         iterator it = _data;
-        if (count > _capacity) {
-            reallocate(count * expansion_ratio);
+        if (count > _size) {
+            if (count > _capacity) {
+                reallocate(count * expansion_ratio);
+            }
+            size_t lastElementIndex = _size;
+            it = begin();
+            for (size_t i = lastElementIndex; i < count; i++) {
+                new(it + i) T();
+            }
         }
         else {
             for (size_t i = count; i < _size; i++) {
@@ -552,8 +566,10 @@ namespace mystd {
     void vector<T>::resize(size_t count, const T& value) {
         iterator it = _data;
         if (count > _size) {
+            if (count > _capacity) {
+                reallocate(count * expansion_ratio);
+            }
             size_t lastElementIndex = _size;
-            resize(count);
             it = begin();
             for (size_t i = lastElementIndex; i < count; i++) {
                 new(it + i) T(value);
