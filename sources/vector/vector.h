@@ -23,6 +23,7 @@ namespace mystd {
         void move_backward(iterator dest, iterator from, size_t count);
 
     public:
+        //TODO сгрупировать методы по смыслу https://en.cppreference.com/w/cpp/container/vector
         vector();
 
         explicit vector(size_t size);
@@ -35,6 +36,7 @@ namespace mystd {
 
         vector(std::initializer_list<T> list);
 
+        //TODO вернуть магию с SFINAE
         template<class input_iterator>
         vector(input_iterator first, input_iterator last);
 
@@ -635,6 +637,7 @@ namespace mystd {
 
     template<class T>
     void vector<T>::swap(vector<T>& other) noexcept {
+        //TODO лучше разобраться с ADL
         using std::swap; //enable ADL https://stackoverflow.com/questions/5695548/public-friend-swap-member-function
         swap(_size, other._size);
         swap(_capacity, other._capacity);
